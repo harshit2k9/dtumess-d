@@ -93,7 +93,6 @@
       margin-left: 0.4rem;
     }
 
-    /* Modal Controls with Backdrop Blur */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -162,7 +161,6 @@
       background: var(--accent-hover);
     }
 
-    /* Controls Bar (Search + Filter Buttons) */
     .controls-bar {
       display: flex;
       gap: 0.75rem;
@@ -220,7 +218,6 @@
       color: #fff;
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       gap: 0.4rem;
@@ -247,7 +244,6 @@
       border-color: var(--accent);
     }
 
-    /* Grid layout */
     .meal-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -364,7 +360,6 @@
 </head>
 <body>
 
-  <!-- User Modal -->
   <div class="modal-overlay" id="userModal">
     <div class="modal">
       <h2>Student Info</h2>
@@ -395,7 +390,6 @@
     </div>
   </header>
 
-  <!-- Search and Separated Diet Filter Button Group -->
   <section class="controls-bar">
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Search menu items (e.g. Paneer, Biriyani, Eggs)..." oninput="handleSearch()">
@@ -471,27 +465,62 @@
 
     const currentDayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     let activeDay = days.includes(currentDayName) ? currentDayName : days[0];
-    let selectedDiet = 'all'; // 'all', 'veg', 'nonveg'
+    let selectedDiet = 'all';
     let searchQuery = "";
+    let notifiedMealsToday = new Set();
 
     function getTimeBasedGreeting() {
       const hour = new Date().getHours();
-      if (hour >= 5 && hour < 12) {
-        return "Good Morning";
-      } else if (hour >= 12 && hour < 17) {
-        return "Good Afternoon";
-      } else {
-        return "Good Evening";
+      if (hour >= 5 && hour < 12) return "Good Morning";
+      if (hour >= 12 && hour < 17) return "Good Afternoon";
+      return "Good Evening";
+    }
+
+    // Web Push Notification Setup
+    function initNotifications() {
+      if ("Notification" in window) {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+          Notification.requestPermission();
+        }
       }
     }
+
+    function checkAndSendMealNotification() {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      const mealTimes = [
+        { name: "Breakfast", h: 7, m: 30 },
+        { name: "Lunch", h: 12, m: 30 },
+        { name: "Snacks", h: 17, m: 0 },
+        { name: "Dinner", h: 19, m: 30 }
+      ];
+
+      mealTimes.forEach(meal => {
+        const key = `${currentDayName}_${meal.name}`;
+        if (hours === meal.h && minutes === meal.m && !notifiedMealsToday.has(key)) {
+          const todayMenu = menuData[currentDayName][meal.name.toLowerCase()];
+          new Notification(`DTU Mess: ${meal.name} Time! 🍽️`, {
+            body: `Today's Menu: ${todayMenu.veg} ${todayMenu.nonVeg ? '| Non-Veg: ' + todayMenu.nonVeg : ''}`,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1046/1046784.png'
+          });
+          notifiedMealsToday.add(key);
+        }
+      });
+    }
+
+    // Check time every 30 seconds for triggers
+    setInterval(checkAndSendMealNotification, 30000);
 
     function initUser() {
       const name = localStorage.getItem('dtu_user_name');
       const room = localStorage.getItem('dtu_user_room');
 
       if (name && room) {
-        const greeting = getTimeBasedGreeting();
-        greetingText.textContent = `${greeting}, ${name} (${room})`;
+        greetingText.textContent = `${getTimeBasedGreeting()}, ${name} (${room})`;
         userModal.classList.add('hidden');
       } else {
         openModal();
@@ -512,20 +541,17 @@
       if (name && room) {
         localStorage.setItem('dtu_user_name', name);
         localStorage.setItem('dtu_user_room', room);
-
-        const greeting = getTimeBasedGreeting();
-        greetingText.textContent = `${greeting}, ${name} (${room})`;
+        greetingText.textContent = `${getTimeBasedGreeting()}, ${name} (${room})`;
         userModal.classList.add('hidden');
+        initNotifications();
       }
     });
 
     function setDietFilter(filter) {
       selectedDiet = filter;
-      
       document.getElementById('btnAll').className = `filter-btn ${filter === 'all' ? 'active' : ''}`;
       document.getElementById('btnVeg').className = `filter-btn ${filter === 'veg' ? 'active veg-active' : ''}`;
       document.getElementById('btnNonVeg').className = `filter-btn ${filter === 'nonveg' ? 'active nonveg-active' : ''}`;
-
       renderMeals();
     }
 
@@ -536,8 +562,7 @@
 
     function toggleMealSkip(day, mealType) {
       const key = `skip_${day}_${mealType}`;
-      const isSkipped = localStorage.getItem(key) === 'true';
-      if (isSkipped) {
+      if (localStorage.getItem(key) === 'true') {
         localStorage.removeItem(key);
       } else {
         localStorage.setItem(key, 'true');
@@ -548,20 +573,18 @@
     function isCurrentMealSlot(mealType) {
       if (activeDay !== currentDayName) return false;
       const now = new Date();
-      const minutes = now.getHours() * 60 + now.getMinutes();
+      const mins = now.getHours() * 60 + now.getMinutes();
 
-      if (mealType === 'breakfast' && minutes >= 450 && minutes < 570) return true; // 7:30 AM - 9:30 AM
-      if (mealType === 'lunch' && minutes >= 750 && minutes < 870) return true;     // 12:30 PM - 2:30 PM
-      if (mealType === 'snacks' && minutes >= 1020 && minutes < 1080) return true;   // 5:00 PM - 6:00 PM
-      if (mealType === 'dinner' && minutes >= 1170 && minutes < 1290) return true;   // 7:30 PM - 9:30 PM
+      if (mealType === 'breakfast' && mins >= 450 && mins < 570) return true;
+      if (mealType === 'lunch' && mins >= 750 && mins < 870) return true;
+      if (mealType === 'snacks' && mins >= 1020 && mins < 1080) return true;
+      if (mealType === 'dinner' && mins >= 1170 && mins < 1290) return true;
       return false;
     }
 
     function renderTabs() {
       dayTabsContainer.innerHTML = days.map(day => `
-        <button 
-          class="tab-btn ${day === activeDay ? 'active' : ''}" 
-          onclick="setActiveDay('${day}')">
+        <button class="tab-btn ${day === activeDay ? 'active' : ''}" onclick="setActiveDay('${day}')">
           ${day} ${day === currentDayName ? '(Today)' : ''}
         </button>
       `).join('');
@@ -573,7 +596,6 @@
 
       Object.entries(meals).forEach(([mealType, data]) => {
         const isSkipped = localStorage.getItem(`skip_${activeDay}_${mealType}`) === 'true';
-        
         const hasVeg = !!data.veg;
         const hasNonVeg = !!data.nonVeg;
 
@@ -631,6 +653,7 @@
     }
 
     initUser();
+    initNotifications();
     renderTabs();
     renderMeals();
   </script>
