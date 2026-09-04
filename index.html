@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DTU Hostel Mess Portal</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111827;
+      --text-muted: #4b5563;
+      --card-bg: #f9fafb;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --input-bg: #ffffff;
+      --veg-color: #16a34a;
+      --nonveg-color: #dc2626;
+      --highlight-bg: #fef3c7;
+      --highlight-border: #f59e0b;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111827;
+        --text: #f9fafb;
+        --text-muted: #9ca3af;
+        --card-bg: #1f2937;
+        --border: #374151;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --input-bg: #1f2937;
+        --highlight-bg: #78350f;
+        --highlight-border: #d97706;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 1.5rem;
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .branding h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .branding .developer {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+      font-weight: 500;
+    }
+
+    .user-info {
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .edit-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-decoration: underline;
+      margin-left: 0.4rem;
+    }
+
+    /* Modal Controls */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      z-index: 100;
+    }
+
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      border-radius: 6px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .modal h2 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+      color: var(--text-muted);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.6rem;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .submit-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Controls Bar (Search + Filter Buttons) */
+    .controls-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 0.3rem;
+      background: var(--card-bg);
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .filter-btn.active.veg-active {
+      background: var(--veg-color);
+      color: #fff;
+    }
+
+    .filter-btn.active.nonveg-active {
+      background: var(--nonveg-color);
+      color: #fff;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab-btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* Grid layout */
+    .meal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+    }
+
+    .meal-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .meal-card.current-meal {
+      border: 2px solid var(--highlight-border);
+      background-color: var(--highlight-bg);
+    }
+
+    .meal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+    }
+
+    .meal-card h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .time-badge {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .separated-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .diet-section {
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .diet-section.veg {
+      border-left: 3px solid var(--veg-color);
+      background: rgba(22, 163, 74, 0.05);
+    }
+
+    .diet-section.non-veg {
+      border-left: 3px solid var(--nonveg-color);
+      background: rgba(220, 38, 38, 0.05);
+    }
+
+    .diet-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 0.1rem;
+      display: block;
+    }
+
+    .diet-section.veg .diet-label {
+      color: var(--veg-color);
+    }
+
+    .diet-section.non-veg .diet-label {
+      color: var(--nonveg-color);
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .skip-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <h2>Student Info</h2>
+      <form id="userForm">
+        <div class="form-group">
+          <label for="nameInput">Full Name</label>
+          <input type="text" id="nameInput" required placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="form-group">
+          <label for="roomInput">Room & Hostel No.</label>
+          <input type="text" id="roomInput" required placeholder="e.g. B-204, VJB Hostel">
+        </div>
+        <button type="submit" class="submit-btn">Save & Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <header>
+    <div class="top-bar">
+      <div class="branding">
+        <h1>DTU Hostel Mess Schedule</h1>
+        <p class="developer">Created by Harshit Kumar</p>
+      </div>
+      <div class="user-info">
+        <span id="greetingText"></span>
+        <button class="edit-btn" onclick="openModal()">Edit Profile</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search and Separated Diet Filter Button Group -->
+  <section class="controls-bar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search menu items (e.g. Paneer, Biriyani, Eggs)..." oninput="handleSearch()">
+    </div>
+    
+    <div class="filter-group">
+      <button class="filter-btn active" id="btnAll" onclick="setDietFilter('all')">ALL</button>
+      <button class="filter-btn" id="btnVeg" onclick="setDietFilter('veg')">VEG ONLY</button>
+      <button class="filter-btn" id="btnNonVeg" onclick="setDietFilter('nonveg')">NON-VEG ONLY</button>
+    </div>
+  </section>
+
+  <nav class="tabs" id="dayTabs"></nav>
+  <main class="meal-grid" id="mealDisplay"></main>
+
+  <footer>
+    DTU Mess Portal &bull; Daily timings: Breakfast (7:30-9:30 AM) | Lunch (12:30-2:30 PM) | Snacks (5:00-6:00 PM) | Dinner (7:30-9:30 PM)
+  </footer>
+
+  <script>
+    const menuData = {
+      Monday: {
+        breakfast: { veg: "Idli/Vada(2), Sambher, Fruits, Toasted Bread(4), Milk/Tea, Jam, Coffee", nonVeg: "Egg(2)", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Rajma, Soyabean, Sitafal, Raita, Salad, Jeera Rice, Roti", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Macaroni, Nimboo Paani", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Paneer Butter Masala, Seasonal Veg, Masoor Dal, Rice, Roti, Salad, Papad", nonVeg: "Butter Chicken", time: "7:30 - 9:30 PM" }
+      },
+      Tuesday: {
+        breakfast: { veg: "Paratha(2), Curd, Bread(4), Jam, Fruit, Tea, Milk, Butter", nonVeg: "", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Chana Dal, Beigan Barta, Seasonal Sabzi, Raita, Rice, Roti, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Aloo Sandwich, Tea", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Seasonal Veg, Dal Makhni, Kala Chana, Rice, Roti, Salad, Papad, Halwa", nonVeg: "", time: "7:30 - 9:30 PM" }
+      },
+      Wednesday: {
+        breakfast: { veg: "Pav Bhaji, Bread Butter(4), Jam, Tea, Coffee, Milk, Fruits", nonVeg: "Egg", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Mix Veg, Aloo Sabzi, Dal, Rice, Roti, Raita, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Bread Pakoda, Roohafza", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Paneer, Yellow Dal, Aloo Baigan, Rice, Roti, Salad, Ice Cream", nonVeg: "Chicken Curry", time: "7:30 - 9:30 PM" }
+      },
+      Thursday: {
+        breakfast: { veg: "Chhole Bhature, Bread(4), Jam, Tea, Milk, Coffee, Fruits", nonVeg: "", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Masoor Dal, Seasonal Sabzi, Rajma, Rice, Roti, Raita, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Samosa, Tea", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Pulao, Malka Masoor, Soyabean, Seasonal Sabzi, Rice, Roti, Salad, Papad, Kheer", nonVeg: "", time: "7:30 - 9:30 PM" }
+      },
+      Friday: {
+        breakfast: { veg: "Poha, Bread(4), Jam, Tea, Milk, Coffee", nonVeg: "Omelette(1)", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Fried Rice, Machurian, Aloo Matar, Raita, Roti, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Noodles, Nimboo Pani", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Chaap, Yellow Dal, Mix Veg, Rice, Roti, Salad, Custard", nonVeg: "Egg Curry", time: "7:30 - 9:30 PM" }
+      },
+      Saturday: {
+        breakfast: { veg: "Mater Kulcha(2), Bread(4), Fruits, Tea, Coffee, Jam", nonVeg: "Egg(2)", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Seasonal Sabzi, Chole Masala, Soyabean, Rice, Raita, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Corn Chaat, Tea", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Khichdi, Dahi, Papad", nonVeg: "", time: "7:30 - 9:30 PM" }
+      },
+      Sunday: {
+        breakfast: { veg: "Puri Sabzi, Bread(4), Jam, Tea, Milk, Coffee", nonVeg: "Egg(2)", time: "7:30 - 9:30 AM" },
+        lunch: { veg: "Kala Chana, Seasonal Veg Sabzi, Aloo Sabzi, Rice, Roti, Salad", nonVeg: "", time: "12:30 - 2:30 PM" },
+        snacks: { veg: "Aloo Bonda", nonVeg: "", time: "5:00 - 6:00 PM" },
+        dinner: { veg: "Veg Biriyani, Green Chatni, Red Chatni, Salad, Gulab Jamun, Papad", nonVeg: "Chicken Biriyani", time: "7:30 - 9:30 PM" }
+      }
+    };
+
+    const days = Object.keys(menuData);
+    const dayTabsContainer = document.getElementById('dayTabs');
+    const mealDisplayContainer = document.getElementById('mealDisplay');
+    const userModal = document.getElementById('userModal');
+    const userForm = document.getElementById('userForm');
+    const greetingText = document.getElementById('greetingText');
+    const searchInput = document.getElementById('searchInput');
+
+    const currentDayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    let activeDay = days.includes(currentDayName) ? currentDayName : days[0];
+    let selectedDiet = 'all'; // 'all', 'veg', 'nonveg'
+    let searchQuery = "";
+
+    function getTimeBasedGreeting() {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) {
+        return "Good Morning";
+      } else if (hour >= 12 && hour < 17) {
+        return "Good Afternoon";
+      } else {
+        return "Good Evening";
+      }
+    }
+
+    function initUser() {
+      const name = localStorage.getItem('dtu_user_name');
+      const room = localStorage.getItem('dtu_user_room');
+
+      if (name && room) {
+        const greeting = getTimeBasedGreeting();
+        greetingText.textContent = `${greeting}, ${name} (${room})`;
+        userModal.classList.add('hidden');
+      } else {
+        openModal();
+      }
+    }
+
+    function openModal() {
+      document.getElementById('nameInput').value = localStorage.getItem('dtu_user_name') || '';
+      document.getElementById('roomInput').value = localStorage.getItem('dtu_user_room') || '';
+      userModal.classList.remove('hidden');
+    }
+
+    userForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('nameInput').value.trim();
+      const room = document.getElementById('roomInput').value.trim();
+
+      if (name && room) {
+        localStorage.setItem('dtu_user_name', name);
+        localStorage.setItem('dtu_user_room', room);
+
+        const greeting = getTimeBasedGreeting();
+        greetingText.textContent = `${greeting}, ${name} (${room})`;
+        userModal.classList.add('hidden');
+      }
+    });
+
+    // Diet Filter Switcher
+    function setDietFilter(filter) {
+      selectedDiet = filter;
+      
+      document.getElementById('btnAll').className = `filter-btn ${filter === 'all' ? 'active' : ''}`;
+      document.getElementById('btnVeg').className = `filter-btn ${filter === 'veg' ? 'active veg-active' : ''}`;
+      document.getElementById('btnNonVeg').className = `filter-btn ${filter === 'nonveg' ? 'active nonveg-active' : ''}`;
+
+      renderMeals();
+    }
+
+    function handleSearch() {
+      searchQuery = searchInput.value.toLowerCase().trim();
+      renderMeals();
+    }
+
+    function toggleMealSkip(day, mealType) {
+      const key = `skip_${day}_${mealType}`;
+      const isSkipped = localStorage.getItem(key) === 'true';
+      if (isSkipped) {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, 'true');
+      }
+      renderMeals();
+    }
+
+    function isCurrentMealSlot(mealType) {
+      if (activeDay !== currentDayName) return false;
+      const now = new Date();
+      const minutes = now.getHours() * 60 + now.getMinutes();
+
+      if (mealType === 'breakfast' && minutes >= 450 && minutes < 570) return true; // 7:30 AM - 9:30 AM
+      if (mealType === 'lunch' && minutes >= 750 && minutes < 870) return true;     // 12:30 PM - 2:30 PM
+      if (mealType === 'snacks' && minutes >= 1020 && minutes < 1080) return true;   // 5:00 PM - 6:00 PM
+      if (mealType === 'dinner' && minutes >= 1170 && minutes < 1290) return true;   // 7:30 PM - 9:30 PM
+      return false;
+    }
+
+    function renderTabs() {
+      dayTabsContainer.innerHTML = days.map(day => `
+        <button 
+          class="tab-btn ${day === activeDay ? 'active' : ''}" 
+          onclick="setActiveDay('${day}')">
+          ${day} ${day === currentDayName ? '(Today)' : ''}
+        </button>
+      `).join('');
+    }
+
+    function renderMeals() {
+      const meals = menuData[activeDay];
+      let html = '';
+
+      Object.entries(meals).forEach(([mealType, data]) => {
+        const isSkipped = localStorage.getItem(`skip_${activeDay}_${mealType}`) === 'true';
+        
+        const hasVeg = !!data.veg;
+        const hasNonVeg = !!data.nonVeg;
+
+        const showVeg = (selectedDiet === 'all' || selectedDiet === 'veg') && hasVeg;
+        const showNonVeg = (selectedDiet === 'all' || selectedDiet === 'nonveg') && hasNonVeg;
+
+        // Skip rendering if current filter leaves this meal completely empty
+        if (!showVeg && !showNonVeg) return;
+
+        // Text Search Filter Check
+        const fullText = `${data.veg} ${data.nonVeg}`.toLowerCase();
+        if (searchQuery !== "" && !fullText.includes(searchQuery)) return;
+
+        const isHighlight = isCurrentMealSlot(mealType);
+
+        html += `
+          <article class="meal-card ${isHighlight ? 'current-meal' : ''}">
+            <div>
+              <div class="meal-header">
+                <h3>${mealType}</h3>
+                <span class="time-badge">${data.time}</span>
+              </div>
+              
+              <div class="separated-menu" style="${isSkipped ? 'opacity: 0.4;' : ''}">
+                ${showVeg ? `
+                  <div class="diet-section veg">
+                    <span class="diet-label">Veg Menu</span>
+                    <p style="${isSkipped ? 'text-decoration: line-through;' : ''}">${data.veg}</p>
+                  </div>
+                ` : ''}
+
+                ${showNonVeg ? `
+                  <div class="diet-section non-veg">
+                    <span class="diet-label">Non-Veg Option</span>
+                    <p style="${isSkipped ? 'text-decoration: line-through;' : ''}">${data.nonVeg}</p>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="skip-btn" onclick="toggleMealSkip('${activeDay}', '${mealType}')">
+                ${isSkipped ? 'CANCEL SKIP' : 'SKIP MEAL'}
+              </button>
+            </div>
+          </article>
+        `;
+      });
+
+      mealDisplayContainer.innerHTML = html || `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">No items match your filter criteria.</p>`;
+    }
+
+    function setActiveDay(day) {
+      activeDay = day;
+      renderTabs();
+      renderMeals();
+    }
+
+    initUser();
+    renderTabs();
+    renderMeals();
+  </script>
+</body>
+</html>
